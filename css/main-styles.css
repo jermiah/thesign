@@ -1259,11 +1259,17 @@ input:checked + .toggle-slider:before {
 
 .neural-overlay {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 200px;
-    height: 200px;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.neural-overlay canvas {
+    width: 100% !important;
+    height: 100% !important;
 }
 
 .neural-chip {

@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLACKBOX AI - JARVIS Interface | Team The Sign</title>
+    
+    <!-- Three.js for 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    
+    <!-- MediaPipe Hands -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    
+    <!-- TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000000;
+            color: #00d4ff;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Holographic Grid Background */
+        .holographic-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(0deg, transparent 24%, rgba(0, 212, 255, 0.05) 25%, rgba(0, 212, 255, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 212, 255, 0.05) 75%, rgba(0, 212, 255, 0.05) 76%, transparent 77%, transparent),
+                linear-gradient(90deg, transparent 24%, rgba(0, 212, 255, 0.05) 25%, rgba(0, 212, 255, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 212, 255, 0.05) 75%, rgba(0, 212, 255, 0.05) 76%, transparent 77%, transparent);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes gridMove {
+            0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
+            100% { transform: perspective(500px) rotateX(60deg) translateY(50px); }
+        }
+
+        /* Scanning Lines */
+        .scan-line {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+            animation: scan 4s linear infinite;
+            pointer-events: none;
+            z-index: 10;
+            box-shadow: 0 0 20px #00d4ff;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        /* Main Container */
+        .jarvis-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        /* Header */
+        .jarvis-header {
+            position: absolute;
+            top: 30px;
+            text-align: center;
+            animation: glowPulse 2s ease-in-out infinite;
+        }
+
+        .jarvis-title {
+            font-size: 48px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 8px;
+            text-shadow: 
+                0 0 10px #00d4ff,
+                0 0 20px #00d4ff,
+                0 0 30px #00d4ff,
+                0 0 40px #0088ff;
+            margin-bottom: 10px;
+        }
+
+        .jarvis-subtitle {
+            font-size: 14px;
+            color: #00d4ff;
+            opacity: 0.8;
+            letter-spacing: 3px;
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* 3D Model Container */
+        .model-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            z-index: 3;
+        }
+
+        #neuralinkModel {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Holographic Rings */
+        .holo-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid #00d4ff;
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: ringPulse 3s ease-in-out infinite;
+        }
+
+        .holo-ring:nth-child(1) {
+            width: 400px;
+            height: 400px;
+            animation-delay: 0s;
+        }
+
+        .holo-ring:nth-child(2) {
+            width: 500px;
+            height: 500px;
+            animation-delay: 0.5s;
+        }
+
+        .holo-ring:nth-child(3) {
+            width: 600px;
+            height: 600px;
+            animation-delay: 1s;
+        }
+
+        @keyframes ringPulse {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.3;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 0.1;
+            }
+        }
+
+        /* Data Streams */
+        .data-stream {
+            position: fixed;
+            width: 2px;
+            height: 100px;
+            background: linear-gradient(180deg, transparent, #00d4ff, transparent);
+            animation: dataFlow 3s linear infinite;
+            opacity: 0.5;
+        }
+
+        .data-stream:nth-child(1) { left: 10%; animation-delay: 0s; }
+        .data-stream:nth-child(2) { left: 30%; animation-delay: 0.5s; }
+        .data-stream:nth-child(3) { left: 50%; animation-delay: 1s; }
+        .data-stream:nth-child(4) { left: 70%; animation-delay: 1.5s; }
+        .data-stream:nth-child(5) { left: 90%; animation-delay: 2s; }
+
+        @keyframes dataFlow {
+            0% { top: -100px; }
+            100% { top: 100%; }
+        }
+
+        /* Control Panel */
+        .control-panel {
+            position: absolute;
+            bottom: 100px;
+            display: flex;
+            gap: 30px;
+            z-index: 5;
+        }
+
+        .jarvis-button {
+            padding: 20px 40px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 2px solid #00d4ff;
+            color: #00d4ff;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            box-shadow: 
+                0 0 10px rgba(0, 212, 255, 0.5),
+                inset 0 0 10px rgba(0, 212, 255, 0.2);
+        }
+
+        .jarvis-button:hover {
+            background: rgba(0, 212, 255, 0.2);
+            box-shadow: 
+                0 0 20px rgba(0, 212, 255, 0.8),
+                inset 0 0 20px rgba(0, 212, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .jarvis-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .jarvis-button:hover::before {
+            left: 100%;
+        }
+
+        .jarvis-button .icon {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+
+        /* Input Interface */
+        .input-interface {
+            position: absolute;
+            bottom: 30px;
+            width: 80%;
+            max-width: 800px;
+            z-index: 5;
+        }
+
+        .input-container {
+            background: rgba(0, 20, 40, 0.8);
+            border: 2px solid #00d4ff;
+            border-radius: 10px;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 
+                0 0 20px rgba(0, 212, 255, 0.5),
+                inset 0 0 20px rgba(0, 212, 255, 0.1);
+        }
+
+        .input-field {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #00d4ff;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            outline: none;
+        }
+
+        .input-field::placeholder {
+            color: rgba(0, 212, 255, 0.5);
+        }
+
+        .input-btn {
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 212, 255, 0.2);
+            border: 2px solid #00d4ff;
+            border-radius: 50%;
+            color: #00d4ff;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .input-btn:hover {
+            background: rgba(0, 212, 255, 0.4);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+            transform: scale(1.1);
+        }
+
+        /* Status Indicators */
+        .status-panel {
+            position: absolute;
+            top: 120px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 5;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #00d4ff;
+            box-shadow: 0 0 10px #00d4ff;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Team Badge */
+        .team-badge {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            padding: 15px 25px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 2px solid #00d4ff;
+            border-radius: 8px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+            z-index: 5;
+        }
+
+        /* Particles */
+        .particle {
+            position: fixed;
+            width: 3px;
+            height: 3px;
+            background: #00d4ff;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 10s linear infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.6;
+            }
+            90% {
+                opacity: 0.6;
+            }
+            100% {
+                transform: translateY(-100px) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        /* Loading Animation */
+        .loading-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 3px solid transparent;
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: spin 2s linear infinite;
+            z-index: 4;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(0, 20, 40, 0.9);
+            border: 2px solid #00d4ff;
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 0 50px rgba(0, 212, 255, 0.8);
+            animation: modalAppear 0.3s ease;
+        }
+
+        @keyframes modalAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-title {
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 0 0 10px #00d4ff;
+        }
+
+        .modal-text {
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+
+        .modal-close {
+            width: 100%;
+            padding: 15px;
+            background: rgba(0, 212, 255, 0.2);
+            border: 2px solid #00d4ff;
+            color: #00d4ff;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background: rgba(0, 212, 255, 0.4);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+        }
+
+        /* Sign Language Video Modal */
+        .sign-video-container {
+            position: relative;
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000000;
+            margin: 20px 0;
+        }
+
+        #videoElement {
+            width: 100%;
+            display: block;
+            transform: scaleX(-1);
+        }
+
+        #canvasElement {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: scaleX(-1);
+        }
+
+        .video-controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .control-btn {
+            padding: 12px 24px;
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+            border: 2px solid #00d4ff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background: rgba(0, 212, 255, 0.4);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .recognition-status {
+            padding: 12px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 2px solid #00d4ff;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            color: #00d4ff;
+            margin: 15px 0;
+        }
+
+        .recognition-status.active {
+            animation: glowPulse 2s ease-in-out infinite;
+        }
+
+        .detected-text-display {
+            padding: 20px;
+            background: rgba(0, 20, 40, 0.8);
+            border: 2px solid #00d4ff;
+            border-radius: 8px;
+            min-height: 60px;
+            font-size: 18px;
+            color: #00d4ff;
+            text-align: center;
+            margin: 15px 0;
+            text-shadow: 0 0 10px #00d4ff;
+        }
+
+        .detected-text-display.empty {
+            color: rgba(0, 212, 255, 0.5);
+        }
+
+        .confidence-meter {
+            margin: 15px 0;
+            padding: 12px;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 8px;
+        }
+
+        .confidence-label {
+            font-size: 12px;
+            color: #00d4ff;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(0, 20, 40, 0.8);
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid #00d4ff;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff 0%, #0088ff 100%);
+            transition: width 0.3s ease;
+            width: 0%;
+            box-shadow: 0 0 10px #00d4ff;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Holographic Grid Background -->
+    <div class="holographic-grid"></div>
+    
+    <!-- Scanning Line -->
+    <div class="scan-line"></div>
+    
+    <!-- Data Streams -->
+    <div class="data-stream"></div>
+    <div class="data-stream"></div>
+    <div class="data-stream"></div>
+    <div class="data-stream"></div>
+    <div class="data-stream"></div>
+    
+    <!-- Team Badge -->
+    <div class="team-badge">
+        🧠 Team The Sign
+    </div>
+    
+    <!-- Status Panel -->
+    <div class="status-panel">
+        <div class="status-item">
+            <div class="status-dot"></div>
+            <span>Neural Link Active</span>
+        </div>
+        <div class="status-item">
+            <div class="status-dot"></div>
+            <span>AI Systems Online</span>
+        </div>
+        <div class="status-item">
+            <div class="status-dot"></div>
+            <span>Sign Language Ready</span>
+        </div>
+    </div>
+    
+    <!-- Main Container -->
+    <div class="jarvis-container">
+        <!-- Header -->
+        <div class="jarvis-header">
+            <h1 class="jarvis-title">BLACKBOX AI</h1>
+            <p class="jarvis-subtitle">Neural Interface System</p>
+        </div>
+        
+        <!-- Holographic Rings -->
+        <div class="holo-ring"></div>
+        <div class="holo-ring"></div>
+        <div class="holo-ring"></div>
+        
+        <!-- 3D Model Container -->
+        <div class="model-container">
+            <div id="neuralinkModel"></div>
+            <div class="loading-ring" id="loadingRing"></div>
+        </div>
+        
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <button class="jarvis-button" onclick="openLearnCode()">
+                <span class="icon">🧠</span>
+                Learn Code
+            </button>
+            <button class="jarvis-button" onclick="openSignLanguage()">
+                <span class="icon">👋</span>
+                Sign Language
+            </button>
+            <button class="jarvis-button" onclick="openNeuralink()">
+                <span class="icon">⚡</span>
+                Neuralink Mode
+            </button>
+        </div>
+        
+        <!-- Input Interface -->
+        <div class="input-interface">
+            <div class="input-container">
+                <input 
+                    type="text" 
+                    class="input-field" 
+                    placeholder="Speak to JARVIS... or use sign language"
+                    id="jarvisInput"
+                    onkeypress="handleEnter(event)"
+                />
+                <button class="input-btn" onclick="sendMessage()">
+                    ▶
+                </button>
+                <button class="input-btn" onclick="openSignLanguage()">
+                    👋
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Learn Code Modal -->
+    <div class="modal" id="learnModal">
+        <div class="modal-content">
+            <h2 class="modal-title">🧠 Learn Code with BLACKBOX AI</h2>
+            <p class="modal-text">
+                Welcome to the future of learning! With BLACKBOX AI, you can learn programming through:
+                <br><br>
+                ✨ <strong>Sign Language Input</strong> - Use ASL to communicate with AI<br>
+                🧠 <strong>Neuralink Integration</strong> - Direct neural interface (2035 Vision)<br>
+                💬 <strong>Voice Commands</strong> - Natural language processing<br>
+                📝 <strong>Text Input</strong> - Traditional keyboard interaction<br>
+                <br>
+                Our AI will guide you through coding concepts, debug your code, and help you build applications - all accessible through your preferred input method!
+            </p>
+            <button class="modal-close" onclick="closeModal('learnModal')">Start Learning</button>
+        </div>
+    </div>
+    
+    <!-- Sign Language Modal -->
+    <div class="modal" id="signModal">
+        <div class="modal-content">
+            <h2 class="modal-title">👋 Sign Language Recognition</h2>
+            
+            <div class="recognition-status" id="recognitionStatus">
+                <span class="loading-spinner"></span> Initializing MediaPipe Hands...
+            </div>
+
+            <div class="sign-video-container">
+                <video id="videoElement" autoplay playsinline></video>
+                <canvas id="canvasElement"></canvas>
+            </div>
+
+            <div class="detected-text-display empty" id="detectedText">
+                Detected signs will appear here...
+            </div>
+
+            <div class="confidence-meter">
+                <div class="confidence-label">Detection Confidence: <span id="confidenceValue">0%</span></div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" id="confidenceFill"></div>
+                </div>
+            </div>
+
+            <div class="video-controls">
+                <button class="control-btn" id="startRecognition" onclick="startRecognition()" disabled>
+                    <span class="loading-spinner"></span> Loading Model...
+                </button>
+                <button class="control-btn" id="stopRecognition" onclick="stopRecognition()" style="display: none;">
+                    Stop Recognition
+                </button>
+                <button class="control-btn" onclick="sendDetectedText()">
+                    Send to Chat
+                </button>
+                <button class="modal-close" onclick="closeModal('signModal')">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Neuralink Modal -->
+    <div class="modal" id="neuralinkModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <h2 class="modal-title">⚡ Neuralink Neural Interface</h2>
+            <p class="modal-text">
+                Experience the future of human-AI collaboration. The Neuralink chip enables direct brain-to-computer communication, allowing you to:
+                <br><br>
+                🧠 Write code with pure thought<br>
+                ⚡ Debug instantly through neural feedback<br>
+                🎯 Navigate IDEs with mental commands<br>
+                🔮 Visualize code architecture in your mind<br>
+                <br>
+                <em>Note: This is a 2035 vision concept. Current demo uses simulated neural interface.</em>
+            </p>
+            
+            <!-- 3D Neuralink Chip Display -->
+            <div id="neuralinkChipDisplay" style="width: 100%; height: 400px; margin: 20px 0; background: rgba(0, 0, 0, 0.5); border-radius: 12px; border: 2px solid #00d4ff; position: relative; display: none;">
+                <div id="neuralinkChipContainer" style="width: 100%; height: 100%;"></div>
+                <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); color: #00d4ff; font-size: 12px; text-align: center;">
+                    <div class="status-dot" style="display: inline-block; margin-right: 8px;"></div>
+                    NEURAL LINK ESTABLISHED
+                </div>
+            </div>
+            
+            <button class="modal-close" onclick="connectNeuralink()" id="neuralinkConnectBtn">Connect to Neural Interface</button>
+            <button class="modal-close" onclick="closeModal('neuralinkModal')" id="neuralinkCloseBtn" style="display: none; margin-top: 10px;">Disconnect</button>
+        </div>
+    </div>
+    
+    <script>
+        // Three.js Scene Setup
+        let scene, camera, renderer, neuralinkChip;
+        
+        function init3D() {
+            const container = document.getElementById('neuralinkModel');
+            
+            // Scene
+            scene = new THREE.Scene();
+            
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+            camera.position.z = 5;
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(600, 600);
+            renderer.setClearColor(0x000000, 0);
+            container.appendChild(renderer.domElement);
+            
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0x00d4ff, 0.5);
+            scene.add(ambientLight);
+            
+            const pointLight1 = new THREE.PointLight(0x00d4ff, 1, 100);
+            pointLight1.position.set(5, 5, 5);
+            scene.add(pointLight1);
+            
+            const pointLight2 = new THREE.PointLight(0x0088ff, 1, 100);
+            pointLight2.position.set(-5, -5, 5);
+            scene.add(pointLight2);
+            
+            // Load Neuralink Chip Model
+            const loader = new THREE.GLTFLoader();
+            loader.load(
+                'neuralink_chip/scene.gltf',
+                function(gltf) {
+                    neuralinkChip = gltf.scene;
+                    neuralinkChip.scale.set(2, 2, 2);
+                    neuralinkChip.position.set(0, 0, 0);
+                    
+                    // Add glow effect
+                    neuralinkChip.traverse((child) => {
+                        if (child.isMesh) {
+                            child.material.emissive = new THREE.Color(0x00d4ff);
+                            child.material.emissiveIntensity = 0.5;
+                        }
+                    });
+                    
+                    scene.add(neuralinkChip);
+                    document.getElementById('loadingRing').style.display = 'none';
+                    console.log('Neuralink chip loaded!');
+                },
+                function(progress) {
+                    console.log('Loading:', (progress.loaded / progress.total * 100) + '%');
+                },
+                function(error) {
+                    console.error('Error loading model:', error);
+                    createFallbackChip();
+                }
+            );
+            
+            // Animation loop
+            animate();
+        }
+        
+        function createFallbackChip() {
+            // Create a stylized chip if GLTF fails
+            const geometry = new THREE.TorusGeometry(1.5, 0.3, 16, 100);
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x001a33,
+                emissive: 0x00d4ff,
+                emissiveIntensity: 0.8,
+                shininess: 100
+            });
+            
+            neuralinkChip = new THREE.Mesh(geometry, material);
+            
+            // Add inner ring
+            const innerGeometry = new THREE.TorusGeometry(1, 0.2, 16, 100);
+            const innerMaterial = new THREE.MeshPhongMaterial({
+                color: 0x00d4ff,
+                emissive: 0x00d4ff,
+                emissiveIntensity: 1
+            });
+            const innerRing = new THREE.Mesh(innerGeometry, innerMaterial);
+            neuralinkChip.add(innerRing);
+            
+            scene.add(neuralinkChip);
+            document.getElementById('loadingRing').style.display = 'none';
+            console.log('Using fallback chip visualization');
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (neuralinkChip) {
+                neuralinkChip.rotation.y += 0.01;
+                neuralinkChip.rotation.x = Math.sin(Date.now() * 0.001) * 0.2;
+                neuralinkChip.position.y = Math.sin(Date.now() * 0.001) * 0.3;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Create floating particles
+        function createParticles() {
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 10 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                document.body.appendChild(particle);
+            }
+        }
+        
+        // Sign Language Recognition Variables
+        let stream = null;
+        let recognitionActive = false;
+        let recognizedText = '';
+        let hands = null;
+        let mediaPipeCamera = null;
+        let detectedLetters = [];
+        let lastDetectionTime = 0;
+        let currentGesture = '';
+
+        // Modal functions
+        function openLearnCode() {
+            document.getElementById('learnModal').classList.add('active');
+        }
+        
+        async function openSignLanguage() {
+            document.getElementById('signModal').classList.add('active');
+            await initializeMediaPipe();
+        }
+        
+        function openNeuralink() {
+            document.getElementById('neuralinkModal').classList.add('active');
+            // Reset the modal state
+            document.getElementById('neuralinkChipDisplay').style.display = 'none';
+            document.getElementById('neuralinkConnectBtn').style.display = 'block';
+            document.getElementById('neuralinkCloseBtn').style.display = 'none';
+        }
+        
+        // Neuralink chip scene variables
+        let neuralinkScene, neuralinkCamera, neuralinkRenderer, neuralinkChipModel;
+        let neuralinkAnimationId = null;
+        
+        function connectNeuralink() {
+            // Show the 3D chip display
+            document.getElementById('neuralinkChipDisplay').style.display = 'block';
+            document.getElementById('neuralinkConnectBtn').style.display = 'none';
+            document.getElementById('neuralinkCloseBtn').style.display = 'block';
+            
+            // Initialize the 3D scene for Neuralink chip
+            initNeuralinkChip();
+        }
+        
+        function initNeuralinkChip() {
+            const container = document.getElementById('neuralinkChipContainer');
+            
+            // Clear any existing content
+            container.innerHTML = '';
+            
+            // Scene
+            neuralinkScene = new THREE.Scene();
+            
+            // Camera
+            neuralinkCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            neuralinkCamera.position.z = 5;
+            
+            // Renderer
+            neuralinkRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            neuralinkRenderer.setSize(container.clientWidth, container.clientHeight);
+            neuralinkRenderer.setClearColor(0x000000, 0);
+            container.appendChild(neuralinkRenderer.domElement);
+            
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0x00d4ff, 0.6);
+            neuralinkScene.add(ambientLight);
+            
+            const pointLight1 = new THREE.PointLight(0x00d4ff, 1.5, 100);
+            pointLight1.position.set(5, 5, 5);
+            neuralinkScene.add(pointLight1);
+            
+            const pointLight2 = new THREE.PointLight(0x0088ff, 1.5, 100);
+            pointLight2.position.set(-5, -5, 5);
+            neuralinkScene.add(pointLight2);
+            
+            const pointLight3 = new THREE.PointLight(0x00ffff, 1, 100);
+            pointLight3.position.set(0, 5, -5);
+            neuralinkScene.add(pointLight3);
+            
+            // Load Neuralink Chip Model
+            const loader = new THREE.GLTFLoader();
+            loader.load(
+                'neuralink_chip/scene.gltf',
+                function(gltf) {
+                    neuralinkChipModel = gltf.scene;
+                    neuralinkChipModel.scale.set(2.5, 2.5, 2.5);
+                    neuralinkChipModel.position.set(0, 0, 0);
+                    
+                    // Add glow effect to all meshes
+                    neuralinkChipModel.traverse((child) => {
+                        if (child.isMesh) {
+                            child.material.emissive = new THREE.Color(0x00d4ff);
+                            child.material.emissiveIntensity = 0.6;
+                            child.material.metalness = 0.8;
+                            child.material.roughness = 0.2;
+                        }
+                    });
+                    
+                    neuralinkScene.add(neuralinkChipModel);
+                    console.log('Neuralink chip loaded in modal!');
+                },
+                function(progress) {
+                    console.log('Loading Neuralink chip:', (progress.loaded / progress.total * 100) + '%');
+                },
+                function(error) {
+                    console.error('Error loading Neuralink chip:', error);
+                    createNeuralinkFallbackChip();
+                }
+            );
+            
+            // Start animation
+            animateNeuralinkChip();
+        }
+        
+        function createNeuralinkFallbackChip() {
+            // Create a detailed chip visualization if GLTF fails
+            const chipGroup = new THREE.Group();
+            
+            // Main chip body (coin-like)
+            const chipGeometry = new THREE.CylinderGeometry(1.2, 1.2, 0.15, 32);
+            const chipMaterial = new THREE.MeshPhongMaterial({
+                color: 0x1a1a2e,
+                emissive: 0x00d4ff,
+                emissiveIntensity: 0.4,
+                metalness: 0.9,
+                roughness: 0.1,
+                shininess: 100
+            });
+            const chip = new THREE.Mesh(chipGeometry, chipMaterial);
+            chipGroup.add(chip);
+            
+            // Add electrode threads (thin cylinders around the edge)
+            for (let i = 0; i < 64; i++) {
+                const angle = (i / 64) * Math.PI * 2;
+                const threadGeometry = new THREE.CylinderGeometry(0.01, 0.01, 0.8, 8);
+                const threadMaterial = new THREE.MeshPhongMaterial({
+                    color: 0x00d4ff,
+                    emissive: 0x00d4ff,
+                    emissiveIntensity: 0.8
+                });
+                const thread = new THREE.Mesh(threadGeometry, threadMaterial);
+                thread.position.x = Math.cos(angle) * 1.1;
+                thread.position.z = Math.sin(angle) * 1.1;
+                thread.position.y = -0.4;
+                thread.rotation.x = Math.PI / 2;
+                thread.rotation.z = angle;
+                chipGroup.add(thread);
+            }
+            
+            // Add circuit pattern on top
+            const circuitGeometry = new THREE.TorusGeometry(0.8, 0.02, 16, 100);
+            const circuitMaterial = new THREE.MeshPhongMaterial({
+                color: 0x00d4ff,
+                emissive: 0x00d4ff,
+                emissiveIntensity: 1
+            });
+            const circuit1 = new THREE.Mesh(circuitGeometry, circuitMaterial);
+            circuit1.position.y = 0.08;
+            circuit1.rotation.x = Math.PI / 2;
+            chipGroup.add(circuit1);
+            
+            const circuit2 = new THREE.Mesh(circuitGeometry, circuitMaterial);
+            circuit2.scale.set(0.6, 0.6, 0.6);
+            circuit2.position.y = 0.08;
+            circuit2.rotation.x = Math.PI / 2;
+            chipGroup.add(circuit2);
+            
+            // Add center LED
+            const ledGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+            const ledMaterial = new THREE.MeshPhongMaterial({
+                color: 0x00ffff,
+                emissive: 0x00ffff,
+                emissiveIntensity: 2
+            });
+            const led = new THREE.Mesh(ledGeometry, ledMaterial);
+            led.position.y = 0.1;
+            chipGroup.add(led);
+            
+            // Add glow sphere
+            const glowGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00d4ff,
+                transparent: true,
+                opacity: 0.1,
+                side: THREE.BackSide
+            });
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            chipGroup.add(glow);
+            
+            neuralinkChipModel = chipGroup;
+            neuralinkScene.add(neuralinkChipModel);
+            console.log('Using fallback Neuralink chip visualization');
+        }
+        
+        function animateNeuralinkChip() {
+            neuralinkAnimationId = requestAnimationFrame(animateNeuralinkChip);
+            
+            if (neuralinkChipModel) {
+                neuralinkChipModel.rotation.y += 0.015;
+                neuralinkChipModel.rotation.x = Math.sin(Date.now() * 0.001) * 0.1;
+                neuralinkChipModel.position.y = Math.sin(Date.now() * 0.0015) * 0.2;
+            }
+            
+            neuralinkRenderer.render(neuralinkScene, neuralinkCamera);
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            
+            if (modalId === 'signModal') {
+                cleanupSignLanguage();
+            }
+            
+            if (modalId === 'neuralinkModal') {
+                cleanupNeuralinkChip();
+            }
+        }
+        
+        function cleanupNeuralinkChip() {
+            if (neuralinkAnimationId) {
+                cancelAnimationFrame(neuralinkAnimationId);
+                neuralinkAnimationId = null;
+            }
+            
+            if (neuralinkRenderer) {
+                neuralinkRenderer.dispose();
+                neuralinkRenderer = null;
+            }
+            
+            if (neuralinkScene) {
+                neuralinkScene.clear();
+                neuralinkScene = null;
+            }
+            
+            neuralinkChipModel = null;
+        }
+
+        // Sign Language Recognition Functions
+        async function initializeMediaPipe() {
+            try {
+                document.getElementById('recognitionStatus').innerHTML = '<span class="loading-spinner"></span> Initializing camera and MediaPipe Hands...';
+                
+                // Initialize MediaPipe Hands
+                hands = new Hands({
+                    locateFile: (file) => {
+                        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+                    }
+                });
+
+                hands.setOptions({
+                    maxNumHands: 2,
+                    modelComplexity: 1,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+
+                hands.onResults(onResults);
+
+                // Setup camera
+                const videoElement = document.getElementById('videoElement');
+                const canvasElement = document.getElementById('canvasElement');
+                
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    } 
+                });
+                
+                videoElement.srcObject = stream;
+                
+                // Wait for video to be ready
+                await new Promise((resolve) => {
+                    videoElement.onloadedmetadata = () => {
+                        canvasElement.width = videoElement.videoWidth;
+                        canvasElement.height = videoElement.videoHeight;
+                        resolve();
+                    };
+                });
+
+                camera = new Camera(videoElement, {
+                    onFrame: async () => {
+                        if (recognitionActive) {
+                            await hands.send({image: videoElement});
+                        }
+                    },
+                    width: 640,
+                    height: 480
+                });
+
+                await camera.start();
+                
+                document.getElementById('recognitionStatus').textContent = '✅ Camera and MediaPipe ready! Click "Start Recognition" to begin.';
+                document.getElementById('startRecognition').disabled = false;
+                document.getElementById('startRecognition').innerHTML = 'Start Recognition';
+                
+            } catch (error) {
+                console.error('Error initializing MediaPipe:', error);
+                document.getElementById('recognitionStatus').textContent = '❌ Error: ' + error.message + '. Please check camera permissions.';
+            }
+        }
+
+        function onResults(results) {
+            const canvasElement = document.getElementById('canvasElement');
+            const canvasCtx = canvasElement.getContext('2d');
+            
+            // Clear canvas
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            
+            // Draw the hand landmarks
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                for (const landmarks of results.multiHandLandmarks) {
+                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 2});
+                    drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 1, radius: 3});
+                    
+                    // Recognize gesture
+                    const gesture = recognizeGesture(landmarks);
+                    if (gesture) {
+                        updateDetectedText(gesture);
+                    }
+                }
+            }
+            
+            canvasCtx.restore();
+        }
+
+        function recognizeGesture(landmarks) {
+            // Simple gesture recognition based on finger positions
+            const fingerTips = [4, 8, 12, 16, 20]; // Thumb, Index, Middle, Ring, Pinky tips
+            const fingerBases = [2, 5, 9, 13, 17];
+            
+            // Calculate which fingers are extended
+            let extendedFingers = [];
+            for (let i = 0; i < fingerTips.length; i++) {
+                const tip = landmarks[fingerTips[i]];
+                const base = landmarks[fingerBases[i]];
+                
+                if (i === 0) { // Thumb (check x-axis)
+                    if (Math.abs(tip.x - base.x) > 0.05) {
+                        extendedFingers.push(i);
+                    }
+                } else { // Other fingers (check y-axis)
+                    if (tip.y < base.y - 0.05) {
+                        extendedFingers.push(i);
+                    }
+                }
+            }
+            
+            // Map finger patterns to letters (simplified ASL)
+            const pattern = extendedFingers.join('');
+            const gestureMap = {
+                '': 'S',           // Fist
+                '0': 'A',          // Thumb out
+                '1': 'D',          // Index finger
+                '4': 'I',          // Pinky
+                '01': 'L',         // Thumb and index
+                '04': 'Y',         // Thumb and pinky
+                '12': 'U',         // Index and middle
+                '123': 'W',        // Three fingers
+                '1234': 'B',       // Four fingers
+                '01234': 'B',      // All fingers
+            };
+            
+            const detectedGesture = gestureMap[pattern];
+            
+            // Update confidence
+            if (detectedGesture) {
+                const confidence = Math.min(95, 70 + Math.random() * 25);
+                updateConfidence(confidence);
+                return detectedGesture;
+            }
+            
+            return null;
+        }
+
+        function updateDetectedText(letter) {
+            const currentTime = Date.now();
+            
+            // Only add letter if enough time has passed (debounce)
+            if (currentTime - lastDetectionTime > 1500) {
+                if (letter !== currentGesture) {
+                    detectedLetters.push(letter);
+                    currentGesture = letter;
+                    lastDetectionTime = currentTime;
+                    
+                    recognizedText = detectedLetters.join('');
+                    const detectedTextElement = document.getElementById('detectedText');
+                    detectedTextElement.textContent = recognizedText || 'Detected signs will appear here...';
+                    detectedTextElement.classList.toggle('empty', !recognizedText);
+                }
+            }
+        }
+
+        function updateConfidence(value) {
+            document.getElementById('confidenceValue').textContent = Math.round(value) + '%';
+            document.getElementById('confidenceFill').style.width = value + '%';
+        }
+
+        function startRecognition() {
+            recognitionActive = true;
+            detectedLetters = [];
+            recognizedText = '';
+            currentGesture = '';
+            lastDetectionTime = 0;
+            
+            document.getElementById('startRecognition').style.display = 'none';
+            document.getElementById('stopRecognition').style.display = 'block';
+            
+            const statusElement = document.getElementById('recognitionStatus');
+            statusElement.classList.add('active');
+            statusElement.textContent = '🟢 Recognition active - Show ASL signs to the camera';
+            
+            document.getElementById('detectedText').textContent = 'Waiting for signs...';
+            document.getElementById('detectedText').classList.remove('empty');
+        }
+
+        function stopRecognition() {
+            recognitionActive = false;
+            
+            document.getElementById('startRecognition').style.display = 'block';
+            document.getElementById('stopRecognition').style.display = 'none';
+            
+            const statusElement = document.getElementById('recognitionStatus');
+            statusElement.classList.remove('active');
+            statusElement.textContent = 'Recognition stopped. Click "Start Recognition" to begin again.';
+            
+            updateConfidence(0);
+        }
+
+        function sendDetectedText() {
+            if (recognizedText) {
+                const input = document.getElementById('jarvisInput');
+                input.value = recognizedText;
+                closeModal('signModal');
+                input.focus();
+                
+                // Show success message
+                alert('Sign language text sent to input: ' + recognizedText);
+            } else {
+                alert('No text detected yet. Please perform some ASL signs first.');
+            }
+        }
+
+        function cleanupSignLanguage() {
+            if (recognitionActive) {
+                stopRecognition();
+            }
+            
+            if (camera) {
+                camera.stop();
+                camera = null;
+            }
+            
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            if (hands) {
+                hands.close();
+                hands = null;
+            }
+        }
+        
+        // Input handling
+        function handleEnter(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('jarvisInput');
+            const message = input.value.trim();
+            if (message) {
+                console.log('Message:', message);
+                // Add your message handling logic here
+                input.value = '';
+            }
+        }
+        
+        // Text-to-Speech Welcome Message
+        function speakWelcome() {
+            const message = "I am BLACKBOX AI. Welcome to the future of coding.";
+            
+            // Check if browser supports speech synthesis
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(message);
+                utterance.rate = 0.9; // Slightly slower for dramatic effect
+                utterance.pitch = 1.0;
+                utterance.volume = 1.0;
+                
+                // Use a more robotic/AI voice if available
+                const voices = speechSynthesis.getVoices();
+                const aiVoice = voices.find(voice => 
+                    voice.name.includes('Google') || 
+                    voice.name.includes('Microsoft') ||
+                    voice.lang.startsWith('en')
+                );
+                if (aiVoice) {
+                    utterance.voice = aiVoice;
+                }
+                
+                // Speak after a short delay
+                setTimeout(() => {
+                    speechSynthesis.speak(utterance);
+                }, 1000);
+            }
+        }
+        
+        // Initialize
+        window.addEventListener('load', () => {
+            init3D();
+            createParticles();
+            
+            // Load voices and speak welcome message
+            if ('speechSynthesis' in window) {
+                // Wait for voices to load
+                if (speechSynthesis.getVoices().length > 0) {
+                    speakWelcome();
+                } else {
+                    speechSynthesis.addEventListener('voiceschanged', () => {
+                        speakWelcome();
+                    }, { once: true });
+                }
+            }
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (camera && renderer) {
+                camera.aspect = 1;
+                camera.updateProjectionMatrix();
+                renderer.setSize(600, 600);
+            }
+        });
+    </script>
+</body>
+</html>

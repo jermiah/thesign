@@ -93,30 +93,34 @@ class NeuralAnimation {
         const loader = new THREE.GLTFLoader();
         
         loader.load(
-            'neuralink_chip/scene.gltf',
+            'humanoid/scene.gltf',
             (gltf) => {
                 this.neuralinkModel = gltf.scene;
                 
-                // Scale and position the model
-                this.neuralinkModel.scale.set(2, 2, 2);
-                this.neuralinkModel.position.set(0, 0, 0);
+                // Scale and position the humanoid model
+                // Humanoid models are usually much larger, so scale down
+                this.neuralinkModel.scale.set(0.02, 0.02, 0.02);
+                this.neuralinkModel.position.set(0, -1, 0);
                 
                 // Add glow effect to materials
                 this.neuralinkModel.traverse((child) => {
                     if (child.isMesh) {
-                        child.material.emissive = new THREE.Color(0x00bfff);
-                        child.material.emissiveIntensity = 0.3;
+                        // Keep original materials but add slight glow
+                        if (child.material) {
+                            child.material.emissive = new THREE.Color(0x00bfff);
+                            child.material.emissiveIntensity = 0.2;
+                        }
                     }
                 });
                 
                 this.scene.add(this.neuralinkModel);
-                console.log('Neuralink chip model loaded successfully!');
+                console.log('Humanoid model loaded successfully!');
             },
             (progress) => {
-                console.log('Loading Neuralink chip:', (progress.loaded / progress.total * 100) + '%');
+                console.log('Loading humanoid model:', (progress.loaded / progress.total * 100) + '%');
             },
             (error) => {
-                console.error('Error loading Neuralink chip model:', error);
+                console.error('Error loading humanoid model:', error);
                 // Create fallback geometry if model fails to load
                 this.createFallbackChip();
             }
@@ -156,11 +160,11 @@ class NeuralAnimation {
         
         // Rotate the model
         if (this.neuralinkModel) {
-            this.neuralinkModel.rotation.y += 0.005;
-            this.neuralinkModel.rotation.x = Math.sin(Date.now() * 0.001) * 0.1;
+            this.neuralinkModel.rotation.y += 0.01;
             
-            // Floating animation
-            this.neuralinkModel.position.y = Math.sin(Date.now() * 0.001) * 0.2;
+            // Gentle floating animation
+            const time = Date.now() * 0.001;
+            this.neuralinkModel.position.y = -1 + Math.sin(time) * 0.1;
         }
         
         this.renderer.render(this.scene, this.camera);
@@ -285,11 +289,14 @@ class NeuralAnimation {
         // Clear canvas
         this.ctx.clearRect(0, 0, this.width, this.height);
         
-        // Update and draw
+        // Update and draw 2D elements
         this.updateParticles();
         this.drawConnections();
         this.drawParticles();
         this.drawNeuralPulses();
+        
+        // Animate 3D model
+        this.animateThreeJS();
         
         // Continue animation
         this.animationId = requestAnimationFrame(() => this.animate());
@@ -299,13 +306,30 @@ class NeuralAnimation {
         if (this.animationId) {
             cancelAnimationFrame(this.animationId);
         }
+        
+        // Clean up Three.js
+        if (this.renderer) {
+            this.renderer.dispose();
+        }
+        if (this.scene) {
+            this.scene.clear();
+        }
     }
+}
+
+// Add GLTFLoader to THREE if not already present
+if (typeof THREE !== 'undefined' && !THREE.GLTFLoader) {
+    // GLTFLoader will be loaded from CDN
+    console.log('Waiting for GLTFLoader...');
 }
 
 // Initialize neural animation when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    const neuralCanvas = document.getElementById('neuralCanvas');
-    if (neuralCanvas) {
-        window.neuralAnimation = new NeuralAnimation('neuralCanvas');
-    }
+    // Wait a bit for Three.js and GLTFLoader to load
+    setTimeout(() => {
+        const neuralCanvas = document.getElementById('neuralCanvas');
+        if (neuralCanvas) {
+            window.neuralAnimation = new NeuralAnimation('neuralCanvas');
+        }
+    }, 500);
 });
