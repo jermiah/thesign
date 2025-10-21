@@ -1,0 +1,11 @@
+Model Information:
+* title:	Neuralink chip
+* source:	https://sketchfab.com/3d-models/neuralink-chip-c4739fffdaf64d438b0734170a5d5dac
+* author:	markdragan (https://sketchfab.com/markdragan)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Neuralink chip" (https://sketchfab.com/3d-models/neuralink-chip-c4739fffdaf64d438b0734170a5d5dac) by markdragan (https://sketchfab.com/markdragan) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

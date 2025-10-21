@@ -36,6 +36,9 @@ class SignLanguageApp {
     async init() {
         console.log('Initializing Sign Language App...');
         
+        // Initialize hero robot on welcome screen
+        this.initializeHeroRobot();
+        
         // Load recognition model
         await this.recognition.loadModel();
         
@@ -43,6 +46,19 @@ class SignLanguageApp {
         this.setupEventListeners();
         
         console.log('App initialized successfully!');
+    }
+    
+    initializeHeroRobot() {
+        // Initialize the 3D robot on the welcome screen
+        const container = document.getElementById('heroRobotContainer');
+        if (container && typeof HeroRobot !== 'undefined') {
+            try {
+                this.heroRobot = new HeroRobot('heroRobotContainer');
+                console.log('Hero robot initialized successfully!');
+            } catch (error) {
+                console.error('Error initializing hero robot:', error);
+            }
+        }
     }
     
     setupEventListeners() {
