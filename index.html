@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLACKBOX AI - Sign Language Interface | Team The Sign</title>
+    
+    <!-- MediaPipe Hands -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    
+    <!-- TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    
+    <!-- Three.js for 3D Avatar -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    
+    <link rel="stylesheet" href="css/main-styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">B</div>
+                <div class="logo-text">BLACKBOX AI</div>
+            </div>
+
+            <div class="team-badge">
+                <div class="team-badge-title">Hackathon Team</div>
+                <div class="team-badge-name">The Sign</div>
+            </div>
+
+            <button class="new-chat-btn" onclick="app.startNewChat()">
+                <span>+</span>
+                <span>New Chat</span>
+            </button>
+
+            <div class="chat-history" id="chatHistory">
+                <div class="chat-item active">Sign Language Chat</div>
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="avatar-toggle">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="avatarToggle" onchange="app.toggleAvatar(this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">Avatar Mode</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="chat-header">
+                <div class="header-left">
+                    <div class="model-selector">
+                        <span>🤖 AI Developer Assistant</span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" onclick="app.startRequirementFlow()" title="Start Requirement Gathering">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                    </button>
+                    <button class="icon-btn" onclick="app.showSettings()" title="Settings">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M12 1v6m0 6v6"></path>
+                        </svg>
+                    </button>
+                </div>
+            </header>
+
+            <div class="messages-container" id="messagesContainer">
+                <div class="welcome-screen" id="welcomeScreen">
+                    <!-- 3D Robot Hero -->
+                    <div class="hero-robot-container" id="heroRobotContainer"></div>
+                    
+                    <h1 class="welcome-title">BLACKBOX AI with Sign Language</h1>
+                    <p class="welcome-subtitle">Build applications using sign language. Our AI avatar will guide you through the process.</p>
+                    
+                    <div class="suggestions">
+                        <div class="suggestion-card" onclick="app.startRequirementFlow()">
+                            <div class="suggestion-icon">🚀</div>
+                            <div class="suggestion-title">Build an App</div>
+                            <div class="suggestion-desc">Start requirement gathering with sign language</div>
+                        </div>
+                        <div class="suggestion-card" onclick="app.openSignLanguage()">
+                            <div class="suggestion-icon">👋</div>
+                            <div class="suggestion-title">Sign Language Input</div>
+                            <div class="suggestion-desc">Use ASL to communicate with AI</div>
+                        </div>
+                        <div class="suggestion-card" onclick="app.toggleAvatar(true)">
+                            <div class="suggestion-icon">🤖</div>
+                            <div class="suggestion-title">Enable Avatar</div>
+                            <div class="suggestion-desc">AI avatar signs back to you</div>
+                        </div>
+                        <div class="suggestion-card" onclick="app.showDemo()">
+                            <div class="suggestion-icon">🎬</div>
+                            <div class="suggestion-title">View Demo</div>
+                            <div class="suggestion-desc">See how it works</div>
+                        </div>
+                    </div>
+
+                    <!-- Neuralink Chip Section -->
+                    <section class="neuralink-ide-section" id="neuralink-ide-section">
+                        <div class="neuralink-container">
+                            <div class="neuralink-content">
+                                <div class="neuralink-header">
+                                    <h2 class="neuralink-title">🧠 Connect to the Neuralink Chip</h2>
+                                    <span class="neuralink-badge">2035 Vision</span>
+                                </div>
+                                <p class="neuralink-description">
+                                    In the future of human–AI collaboration, Blackbox AI connects directly to your Neuralink chip, enabling developers to write, debug, and ship code using pure thought. No typing, no clicking — just intention.
+                                </p>
+                                
+                                <div class="neuralink-features">
+                                    <div class="neuralink-feature">
+                                        <div class="feature-icon">
+                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"></path>
+                                                <path d="M12 6v6l4 2"></path>
+                                                <circle cx="12" cy="12" r="2"></circle>
+                                            </svg>
+                                        </div>
+                                        <h3 class="feature-title">Neural Input</h3>
+                                        <p class="feature-text">Ultra-thin neural threads capture brain signals linked to logic and creativity, translating your thoughts into live coding actions.</p>
+                                    </div>
+                                    
+                                    <div class="neuralink-feature">
+                                        <div class="feature-icon">
+                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                                                <rect x="9" y="9" width="6" height="6"></rect>
+                                                <line x1="9" y1="1" x2="9" y2="4"></line>
+                                                <line x1="15" y1="1" x2="15" y2="4"></line>
+                                                <line x1="9" y1="20" x2="9" y2="23"></line>
+                                                <line x1="15" y1="20" x2="15" y2="23"></line>
+                                                <line x1="20" y1="9" x2="23" y2="9"></line>
+                                                <line x1="20" y1="14" x2="23" y2="14"></line>
+                                                <line x1="1" y1="9" x2="4" y2="9"></line>
+                                                <line x1="1" y1="14" x2="4" y2="14"></line>
+                                            </svg>
+                                        </div>
+                                        <h3 class="feature-title">AI Neural Decoder</h3>
+                                        <p class="feature-text">Deep learning models decode neural activity into structured code, learning your personal style over time.</p>
+                                    </div>
+                                    
+                                    <div class="neuralink-feature">
+                                        <div class="feature-icon">
+                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="4 17 10 11 4 5"></polyline>
+                                                <line x1="12" y1="19" x2="20" y2="19"></line>
+                                            </svg>
+                                        </div>
+                                        <h3 class="feature-title">Neural IDE Interface</h3>
+                                        <p class="feature-text">Your brain becomes the IDE — see, edit, and execute code through holographic or AR visuals driven by thought.</p>
+                                    </div>
+                                    
+                                    <div class="neuralink-feature">
+                                        <div class="feature-icon">
+                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                                <polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline>
+                                                <polyline points="7.5 19.79 7.5 14.6 3 12"></polyline>
+                                                <polyline points="21 12 16.5 14.6 16.5 19.79"></polyline>
+                                                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                                                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                                            </svg>
+                                        </div>
+                                        <h3 class="feature-title">Feedback Loop</h3>
+                                        <p class="feature-text">Sensory feedback helps you feel syntax flow or visualize logic errors directly in your mind.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="neuralink-cta">
+                                    <a href="#neuralink-chip-demo" class="neuralink-btn">
+                                        Connect to Neuralink Chip →
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <div class="neuralink-visual">
+                                <div class="neural-animation" id="neuralAnimation">
+                                    <canvas id="neuralCanvas"></canvas>
+                                    <div class="neural-overlay"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Avatar Container -->
+            <div class="avatar-container" id="avatarContainer" style="display: none;">
+                <div class="avatar-header">
+                    <span>AI Developer Avatar</span>
+                    <button class="close-avatar-btn" onclick="app.toggleAvatar(false)">×</button>
+                </div>
+                <div class="avatar-canvas" id="avatarCanvas"></div>
+                <div class="avatar-status" id="avatarStatus">Avatar ready</div>
+            </div>
+
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <div class="input-box">
+                        <textarea 
+                            class="input-textarea" 
+                            id="messageInput" 
+                            placeholder="Ask me anything or use sign language..."
+                            rows="1"
+                            onkeydown="app.handleKeyPress(event)"
+                            oninput="app.autoResize(this)"
+                        ></textarea>
+                        <div class="input-actions">
+                            <button class="camera-btn" id="cameraBtn" onclick="app.toggleSignLanguage()" title="Sign Language Recognition">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                    <circle cx="12" cy="13" r="4"></circle>
+                                </svg>
+                            </button>
+                            <button class="send-btn" id="sendBtn" onclick="app.sendMessage()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="input-footer">
+                        BLACKBOX AI Hackathon - Team The Sign | Real-time ASL Recognition with AI Avatar
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Video Modal for Sign Language -->
+    <div class="video-modal" id="videoModal">
+        <div class="video-container">
+            <div class="video-header">
+                <h3 class="video-title">Real-Time Sign Language Recognition (ASL)</h3>
+                <button class="close-btn" onclick="app.closeSignLanguage()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="recognition-status" id="recognitionStatus">
+                <span class="loading-spinner"></span> Initializing Enhanced Recognition System...
+            </div>
+
+            <div class="video-wrapper">
+                <video id="videoElement" autoplay playsinline></video>
+                <canvas id="canvasElement"></canvas>
+            </div>
+
+            <div class="detected-text empty" id="detectedText">
+                Detected signs will appear here...
+            </div>
+
+            <div class="confidence-meter">
+                <div class="confidence-label">Detection Confidence: <span id="confidenceValue">0%</span></div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" id="confidenceFill"></div>
+                </div>
+            </div>
+
+            <div class="video-controls">
+                <button class="control-btn" id="startRecognition" onclick="app.startRecognition()" disabled>
+                    <span class="loading-spinner"></span> Loading Model...
+                </button>
+                <button class="control-btn secondary" id="stopRecognition" onclick="app.stopRecognition()" style="display: none;">
+                    Stop Recognition
+                </button>
+                <button class="control-btn secondary" onclick="app.sendDetectedText()">
+                    Send to Chat
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Requirement Flow Modal -->
+    <div class="requirement-modal" id="requirementModal" style="display: none;">
+        <div class="requirement-container">
+            <div class="requirement-header">
+                <h3>Build Your Application</h3>
+                <button class="close-btn" onclick="app.closeRequirementFlow()">×</button>
+            </div>
+            <div class="requirement-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="requirementProgress"></div>
+                </div>
+            </div>
+            <div class="requirement-content" id="requirementContent">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div class="preview-modal" id="previewModal" style="display: none;">
+        <div class="preview-container">
+            <div class="preview-header">
+                <h3>Generated Application</h3>
+                <div class="preview-tabs">
+                    <button class="preview-tab active" onclick="app.switchPreviewTab('live')">Live Preview</button>
+                    <button class="preview-tab" onclick="app.switchPreviewTab('code')">Code View</button>
+                    <button class="preview-tab" onclick="app.switchPreviewTab('files')">Files</button>
+                </div>
+                <button class="close-btn" onclick="app.closePreview()">×</button>
+            </div>
+            <div class="preview-content">
+                <div class="preview-sidebar" id="previewSidebar">
+                    <!-- File list -->
+                </div>
+                <div class="preview-main">
+                    <div id="livePreview" class="preview-panel active"></div>
+                    <div id="codeView" class="preview-panel"></div>
+                    <div id="filesView" class="preview-panel"></div>
+                </div>
+            </div>
+            <div class="preview-footer">
+                <button class="control-btn" onclick="app.downloadApp()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download Project
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load GLTFLoader as ES Module -->
+    <script type="module">
+        import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+        window.GLTFLoader = GLTFLoader;
+        THREE.GLTFLoader = GLTFLoader;
+        console.log('GLTFLoader loaded successfully');
+    </script>
+
+    <!-- Load all JavaScript modules -->
+    <script src="js/enhanced-recognition.js"></script>
+    <script src="js/sign-animations.js"></script>
+    <script src="js/avatar-controller.js"></script>
+    <script src="js/hero-robot-sketchfab.js"></script>
+    <script src="js/neural-animation.js"></script>
+    <script src="js/requirement-flow.js"></script>
+    <script src="js/blackbox-api.js"></script>
+    <script src="js/app-generator.js"></script>
+    <script src="js/preview-manager.js"></script>
+    
+    <!-- Main Application Script -->
+    <script src="js/main-app.js"></script>
+</body>
+</html>
