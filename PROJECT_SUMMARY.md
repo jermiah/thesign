@@ -357,15 +357,6 @@ thesign/
 
 ---
 
-## 📞 Contact & Links
-
-**Project Repository**: [GitHub Link]  
-**Live Demo**: [Demo Link]  
-**Documentation**: See README.md  
-**Quick Start**: See QUICKSTART.md
-
----
-
 ## 📝 License
 
 MIT License - Open source and free to use
