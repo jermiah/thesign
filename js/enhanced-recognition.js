@@ -55,9 +55,10 @@ class EnhancedSignLanguageRecognition {
             '4': { fingers: [1, 2, 3, 4], thumb: 'closed', confidence: 0.8 },
             '5': { fingers: [0, 1, 2, 3, 4], thumb: 'out', confidence: 0.9 },
             
-            // Special patterns
+            // Special patterns - UPGRADED
             'C': { fingers: [0, 1, 2, 3, 4], curved: true, confidence: 0.8 },
             'O': { fingers: [0, 1, 2, 3, 4], circle: true, confidence: 0.8 },
+            'E': { fingers: [], thumb: 'across', fingertips_near_palm: true, confidence: 0.8 },
             'F': { fingers: [2, 3, 4], thumb: 'touch_index', confidence: 0.75 },
             'L': { fingers: [1], thumb: 'out', perpendicular: true, confidence: 0.85 },
             'Y': { fingers: [0, 4], thumb: 'out', confidence: 0.85 },
@@ -88,6 +89,46 @@ class EnhancedSignLanguageRecognition {
     }
     
     /**
+     * Normalize landmarks to make detection distance-independent
+     */
+    normalize(landmarks) {
+        const wrist = landmarks[0];
+        const scale = Math.abs(landmarks[9].y - wrist.y); // palm length
+        
+        if (scale === 0) return landmarks; // Avoid division by zero
+        
+        return landmarks.map(l => ({
+            x: (l.x - wrist.x) / scale,
+            y: (l.y - wrist.y) / scale,
+            z: (l.z - wrist.z) / scale
+        }));
+    }
+    
+    /**
+     * Detect motion-based letters (J and Z)
+     */
+    detectMotionLetter() {
+        if (this.gestureBuffer.length < 5) return null;
+        
+        // Track index finger tip (landmark 8) motion
+        const path = this.gestureBuffer.map(frame => frame[8]);
+        const dx = path[path.length - 1].x - path[0].x;
+        const dy = path[path.length - 1].y - path[0].y;
+        
+        // J: Downward motion with minimal horizontal movement
+        if (dy > 0.08 && Math.abs(dx) < 0.05) {
+            return { gesture: 'J', confidence: 0.85 };
+        }
+        
+        // Z: Diagonal zigzag motion (significant movement in both axes)
+        if (Math.abs(dx) > 0.08 && Math.abs(dy) > 0.05) {
+            return { gesture: 'Z', confidence: 0.80 };
+        }
+        
+        return null;
+    }
+    
+    /**
      * Analyze hand landmarks and recognize gesture
      */
     recognizeGesture(landmarks) {
@@ -95,16 +136,35 @@ class EnhancedSignLanguageRecognition {
             return null;
         }
         
+        // Normalize landmarks for distance-independence
+        const normalizedLandmarks = this.normalize(landmarks);
+        
         // Add to buffer for temporal analysis
-        this.gestureBuffer.push(landmarks);
+        this.gestureBuffer.push(normalizedLandmarks);
         if (this.gestureBuffer.length > this.bufferSize) {
             this.gestureBuffer.shift();
         }
         
-        // Extract features from landmarks
-        const features = this.extractFeatures(landmarks);
+        // Check for motion-based letters first (J, Z)
+        const motionLetter = this.detectMotionLetter();
+        if (motionLetter) {
+            this.gestureHistory.push({
+                letter: motionLetter.gesture,
+                confidence: motionLetter.confidence,
+                timestamp: Date.now()
+            });
+            
+            return {
+                type: 'letter',
+                value: motionLetter.gesture,
+                confidence: motionLetter.confidence
+            };
+        }
         
-        // Recognize letter
+        // Extract features from normalized landmarks
+        const features = this.extractFeatures(normalizedLandmarks);
+        
+        // Recognize static letter
         const letter = this.recognizeLetter(features);
         
         // Check for words/phrases

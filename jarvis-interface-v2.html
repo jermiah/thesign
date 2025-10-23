@@ -1471,10 +1471,8 @@
                     utterance.voice = aiVoice;
                 }
                 
-                // Speak after a short delay
-                setTimeout(() => {
-                    speechSynthesis.speak(utterance);
-                }, 1000);
+                // Speak immediately (no delay)
+                speechSynthesis.speak(utterance);
             }
         }
         
@@ -1483,7 +1481,7 @@
             init3D();
             createParticles();
             
-            // Load voices and speak welcome message
+            // Speak welcome message immediately
             if ('speechSynthesis' in window) {
                 // Wait for voices to load
                 if (speechSynthesis.getVoices().length > 0) {
