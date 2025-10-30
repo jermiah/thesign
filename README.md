@@ -1,10 +1,10 @@
-# 🤖 BLACKBOX AI - Sign Language Interface
+# BLACKBOX AI - Sign Language Interface
 
 **Team The Sign** | BLACKBOX AI Hackathon 2024
 
 > *"I am BLACKBOX AI. Welcome to the future of coding."*
 
-## 🌍 **Our Mission: Creating Many Stephen Hawkings**
+## **Our Mission: Creating Many Stephen Hawkings**
 
 Just as Stephen Hawking revolutionized physics despite his physical limitations through technology, we believe every person with a disability has the potential to change the world. **We're here to make many Stephen Hawkings** - empowering deaf and hard-of-hearing developers to build the future through accessible AI technology.
 
@@ -12,17 +12,17 @@ Just as Stephen Hawking revolutionized physics despite his physical limitations 
 
 ---
 
-## 📦 Two Versions Available
+##  Two Versions Available
 
 ### Version 1 - `jarvis-interface.html`
-✅ 9 letters (A, B, D, I, L, S, U, V, W, Y) | Fast & Simple
+ 9 letters (A, B, D, I, L, S, U, V, W, Y) | Fast & Simple
 
 ### Version 2 - `jarvis-interface-v2.html`
-✨ 26+ letters (Full alphabet A-Z) | Word Detection | Motion Tracking (J, Z)
+26+ letters (Full alphabet A-Z) | Word Detection | Motion Tracking (J, Z)
 
 ---
 
-## 🚀 Quick Start
+##  Quick Start
 
 ```bash
 # Open V1 (9 letters)
@@ -34,7 +34,7 @@ open jarvis-interface-v2.html
 
 ---
 
-## 👋 How to Use Sign Language
+##  How to Use Sign Language
 
 ### Basic Steps (Both Versions)
 
@@ -110,7 +110,7 @@ open jarvis-interface-v2.html
 
 ---
 
-## 💡 Tips for Best Results
+##  Tips for Best Results
 
 **Lighting:** Bright, even light | No shadows
 **Background:** Plain, solid color | High contrast
@@ -120,7 +120,7 @@ open jarvis-interface-v2.html
 
 ---
 
-## 🔊 Voice Activation
+##  Voice Activation
 
 **When:** Immediately on page load (both versions)
 **Message:** "I am BLACKBOX AI. Welcome to the future of coding"
@@ -128,7 +128,7 @@ open jarvis-interface-v2.html
 
 ---
 
-## 🛠️ Technology Stack
+##  Technology Stack
 
 - **MediaPipe Hands** - Google's 21-point hand tracking
 - **Three.js** - 3D graphics
@@ -138,7 +138,7 @@ open jarvis-interface-v2.html
 
 ---
 
-## 🐛 Troubleshooting
+##  Troubleshooting
 
 **Camera not working?** → Check permissions, use Chrome/Edge
 **Low accuracy?** → Better lighting, plain background, hold signs longer
@@ -147,13 +147,13 @@ open jarvis-interface-v2.html
 
 ---
 
-## 📜 License
+##  License
 
 MIT License - Free to use and modify
 
 ---
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - **BLACKBOX AI** - Hackathon platform
 - **Google MediaPipe** - Hand tracking
