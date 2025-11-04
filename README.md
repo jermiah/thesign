@@ -163,4 +163,4 @@ MIT License - Free to use and modify
 
 **Built with ❤️ for accessibility**
 
-*Team The Sign - BLACKBOX AI Hackathon 2024*
+*Team The Sign - BLACKBOX AI Hackathon 2025*
